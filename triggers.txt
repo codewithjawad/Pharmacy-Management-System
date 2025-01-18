@@ -1,0 +1,347 @@
+
+CREATE TRIGGER trg_ManufacturerInsertUpdate
+ON manufacturer
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted or updated row
+    DECLARE @manufacturer_name VARCHAR(100);
+    DECLARE @action VARCHAR(10);
+
+    SELECT @manufacturer_name = manufacturer_name
+    FROM inserted;
+
+    IF EXISTS(SELECT * FROM deleted)
+    BEGIN
+        SET @action = 'Updated';
+    END
+    ELSE
+    BEGIN
+        SET @action = 'Inserted';
+    END;
+
+    PRINT 'Manufacturer ' + @manufacturer_name + ' ' + @action + '.';
+END;
+
+
+CREATE TRIGGER trg_ManufacturerPhoneNumber
+ON manufacturer
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Update the phone number to integer if it is stored as varchar and has a length of 11
+    UPDATE m
+    SET m.manufacturer_phone = CONVERT(INT, m.manufacturer_phone)
+    FROM manufacturer m
+    INNER JOIN inserted i ON m.manufacturer_id = i.manufacturer_id
+    WHERE i.manufacturer_phone LIKE REPLICATE('[0-9]', 11) COLLATE Latin1_General_BIN;
+
+    -- Rollback the transaction if any phone number couldn't be converted to integer
+    IF @@ROWCOUNT <> (SELECT COUNT(*) FROM inserted)
+    BEGIN
+        RAISERROR('Invalid phone number format. Phone number should be numeric and have a length of 11.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+
+exec  InsertManufacturer 109 , 'Ali' , 'Gulshan-e-Iqbal' , '02123484212' , 'Ali@gmail.com' 
+
+
+
+
+CREATE TRIGGER trg_EmployeeInsertUpdate
+ON employee
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted or updated row
+    DECLARE @emp_name VARCHAR(100);
+    DECLARE @action VARCHAR(10);
+
+    SELECT @emp_name = emp_name
+    FROM inserted;
+
+    IF EXISTS(SELECT * FROM deleted)
+    BEGIN
+        SET @action = 'Updated';
+    END
+    ELSE
+    BEGIN
+        SET @action = 'Inserted';
+    END;
+
+    PRINT 'Employee ' + @emp_name + ' ' + @action + '.';
+END;
+
+
+create TRIGGER trg_EmployeePhoneNumber
+ON Employee
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Update the phone number to integer if it is stored as varchar and has a length of 11
+    UPDATE m
+    SET m.emp_phone = CONVERT(INT, m.emp_phone)
+    FROM Employee m
+    INNER JOIN inserted i ON m.emp_id = i.emp_id
+    WHERE i.emp_phone LIKE REPLICATE('[0-9]', 11) COLLATE Latin1_General_BIN;
+
+    -- Rollback the transaction if any phone number couldn't be converted to integer
+    IF @@ROWCOUNT <> (SELECT COUNT(*) FROM inserted)
+    BEGIN
+        RAISERROR('Invalid phone number format. Phone number should be numeric and have a length of 11.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+
+
+
+
+CREATE TRIGGER trg_DoctorInsertUpdate
+ON Doctor
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted or updated row
+    DECLARE @doctor_name VARCHAR(100);
+    DECLARE @action VARCHAR(10);
+
+    SELECT @doctor_name = doctor_name
+    FROM inserted;
+
+    IF EXISTS(SELECT * FROM deleted)
+    BEGIN
+        SET @action = 'Updated';
+    END
+    ELSE
+    BEGIN
+        SET @action = 'Inserted';
+    END;
+
+    PRINT 'Doctor' + @doctor_name + ' ' + @action + '.';
+END;
+
+CREATE TRIGGER trg_StockUpdate
+ON stock
+AFTER UPDATE
+AS
+BEGIN
+
+  -- For example, you can update another table or log the changes
+  -- You can access the updated data using the 'inserted' and 'deleted' tables
+
+  -- Example action: Updating a log table with the updated stock information
+  INSERT INTO stock_log (stock_id, updated_date, previous_quantity, new_quantity)
+  SELECT i.stock_id, GETDATE(), d.quantity, i.quantity
+  FROM inserted AS i
+  INNER JOIN deleted AS d ON i.stock_id = d.stock_id;
+END;
+
+
+
+
+CREATE TRIGGER trg_DoctorPhoneNumber
+ON Doctor
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Update the phone number to integer if it is stored as varchar and has a length of 11
+    UPDATE m
+    SET m.doctor_phone = CONVERT(INT, m.doctor_phone)
+    FROM Doctor m
+    INNER JOIN inserted i ON m.doctor_id = i.doctor_id
+    WHERE i.doctor_phone LIKE REPLICATE('[0-9]', 11) COLLATE Latin1_General_BIN;
+
+    -- Rollback the transaction if any phone number couldn't be converted to integer
+    IF @@ROWCOUNT <> (SELECT COUNT(*) FROM inserted)
+    BEGIN
+        RAISERROR('Invalid phone number format. Phone number should be numeric and have a length of 11.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+
+
+
+create TRIGGER trg_SpecialityInsertUpdateDelete
+ON Speciality
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted, updated, or deleted row
+    IF EXISTS (SELECT * FROM inserted)
+    BEGIN
+        -- Handle insert or update operation
+        SELECT 'Speciality inserted or updated: ' + speciality_name AS Action
+        FROM inserted;
+    END;
+    ELSE IF EXISTS (SELECT * FROM deleted)
+    BEGIN
+        -- Handle delete operation
+        SELECT 'Speciality deleted: ' + speciality_name AS Action
+        FROM deleted;
+    END;
+END;
+
+
+
+
+CREATE TRIGGER trg_DocSpecInsertUpdateDelete
+ON Doc_Spec
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted, updated, or deleted row
+    IF EXISTS (SELECT * FROM inserted)
+    BEGIN
+        -- Handle insert or update operation
+        SELECT 'Doc_Spec inserted or updated: Doctor ID - ' + CONVERT(varchar, doctor_id) + ', Speciality ID - ' + CONVERT(varchar, speciality_id) AS Action
+        FROM inserted;
+		
+    END;
+    ELSE IF EXISTS (SELECT * FROM deleted)
+    BEGIN
+        -- Handle delete operation
+        SELECT 'Doc_Spec deleted: Doctor ID - ' + CONVERT(varchar, doctor_id) + ', Speciality ID - ' + CONVERT(varchar, speciality_id) AS Action
+        FROM deleted;
+    END;
+END;
+
+
+
+CREATE TRIGGER trg_Medicine4InsertUpdateDelete
+ON medicine4
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Perform the necessary actions here
+    -- You can access the inserted and deleted tables to retrieve the affected rows
+
+    -- Example: Print a message for each inserted, updated, or deleted row
+    IF EXISTS (SELECT * FROM inserted)
+    BEGIN
+        -- Handle insert or update operation
+        SELECT 'Medicine4 inserted or updated: Medicine ID - ' + CONVERT(varchar, medicine_id) + ', Medicine Name - ' + medicine_name AS Action
+        FROM inserted;
+    END;
+    ELSE IF EXISTS (SELECT * FROM deleted)
+    BEGIN
+        -- Handle delete operation
+        SELECT 'Medicine4 deleted: Medicine ID - ' + CONVERT(varchar, medicine_id) + ', Medicine Name - ' + medicine_name AS Action
+        FROM deleted;
+    END;
+END;
+
+
+CREATE TRIGGER trg_Medicine4Expiry
+ON medicine4
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Check if any medicine has expired
+    IF EXISTS (
+        SELECT *
+        FROM inserted
+        WHERE medicine_Expiry <= GETDATE()
+    )
+    BEGIN
+        -- Update the is_expired column for expired medicines
+        UPDATE medicine4
+        SET is_expired = 1
+        WHERE medicine_id IN (
+            SELECT medicine_id
+            FROM inserted
+            WHERE medicine_Expiry <= GETDATE()
+        );
+    END;
+END;
+
+
+-- Add the is_expired column to the medicine4 table
+ALTER TABLE medicine4
+ADD is_expired bit NULL;
+
+CREATE TRIGGER trg_Medicine4Expiry
+ON medicine4
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    -- Update the is_expired column for expired medicines
+    UPDATE m
+    SET is_expired = CASE
+        WHEN ISDATE(m.medicine_Expiry) = 1 AND TRY_CONVERT(date, m.medicine_Expiry, 103) <= GETDATE() THEN 1
+        ELSE 0
+    END
+    FROM medicine4 m
+    JOIN inserted i ON m.medicine_id = i.medicine_id;
+END;
+
+
+CREATE TRIGGER trg_PatientOperations
+ON Patient
+AFTER INSERT, UPDATE, DELETE
+AS
+BEGIN
+    -- Inserted records
+    IF EXISTS (SELECT * FROM inserted)
+    BEGIN
+        -- Perform actions for inserted records
+        -- Replace the PRINT statement with your desired actions
+        PRINT 'Records have been inserted or updated.';
+    END;
+    
+    -- Deleted records
+    IF EXISTS (SELECT * FROM deleted)
+    BEGIN
+        -- Perform actions for deleted records
+        -- Replace the PRINT statement with your desired actions
+        PRINT 'Records have been deleted.';
+    END;
+END;
+
+
+CREATE TRIGGER AfterInsertBill
+AFTER INSERT
+ON bill
+
+BEGIN
+  -- Trigger logic goes here
+  -- You can access the newly inserted values using the "NEW" keyword
+  
+  -- Example: Print the inserted BillID
+  DECLARE insertedBillID INT;
+  SET insertedBillID = NEW.bill_id;
+  SELECT 'Inserted BillID: ' + CAST(insertedBillID AS VARCHAR) AS Message;
+END;
+
+
+CREATE TRIGGER trg_BillInsert
+ON Bill
+AFTER INSERT
+AS
+BEGIN
+  SELECT BillID, order_id, patient_id, Date, TotalAmount, PaymentMethod
+  FROM inserted;
+END;
+
+
+
+
+
